@@ -2,271 +2,575 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Списать время</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Candy Quiz - Леденцовая викторина</title>
+    <!-- Canvas Confetti для анимации взрыва (правильное имя функции confetti) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
     <style>
-        body, html {
+        * {
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #87CEEB; /* Небо */
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        /* --- ПЕЙЗАЖ --- */
-        #scenery {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            /* Легкое размытие при зуме для кинематографичности */
-            transition: filter 1.5s ease; 
-        }
-
-        #scenery.blur {
-            filter: blur(5px);
-        }
-
-        /* Солнце */
-        .sun {
-            position: absolute;
-            top: 10%;
-            right: 15%;
-            width: 80px;
-            height: 80px;
-            background-color: #FFD700;
-            border-radius: 50%;
-            box-shadow: 0 0 50px #FFD700, 0 0 100px #FF8C00;
-        }
-
-        /* Облака (простые CSS-формы) */
-        .cloud {
-            position: absolute;
-            background: white;
-            border-radius: 50px;
-            opacity: 0.8;
-        }
-        .cloud::before, .cloud::after {
-            content: '';
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-        }
-        .cloud1 { top: 20%; left: 10%; width: 120px; height: 40px; }
-        .cloud1::before { top: -20px; left: 15px; width: 50px; height: 50px; }
-        .cloud1::after { top: -30px; right: 15px; width: 60px; height: 60px; }
-
-        .cloud2 { top: 15%; right: 30%; width: 100px; height: 35px; transform: scale(0.8); }
-        .cloud2::before { top: -15px; left: 15px; width: 40px; height: 40px; }
-        .cloud2::after { top: -25px; right: 15px; width: 50px; height: 50px; }
-
-        .cloud3 { top: 35%; left: 60%; width: 150px; height: 50px; transform: scale(1.2); opacity: 0.6; }
-        .cloud3::before { top: -25px; left: 20px; width: 60px; height: 60px; }
-        .cloud3::after { top: -35px; right: 20px; width: 70px; height: 70px; }
-
-        /* Поле */
-        .ground {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 35%;
-            background: linear-gradient(to bottom, #7CFC00, #228B22);
-            z-index: 2;
-        }
-
-        /* Озеро с краю */
-        .lake {
-            position: absolute;
-            bottom: 10%;
-            left: -5%;
-            width: 35%;
-            height: 60%;
-            background: linear-gradient(to bottom, #1E90FF, #0000CD);
-            border-radius: 50%;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
-        }
-
-        /* Деревья на горизонте */
-        .trees {
-            position: absolute;
-            bottom: 30%; /* На границе поля и неба */
-            width: 100%;
-            font-size: 45px;
-            letter-spacing: 15px;
-            white-space: nowrap;
-            user-select: none;
-            z-index: 3;
-        }
-
-        /* --- САМОЛЁТ --- */
-        #plane-container {
-            position: absolute;
-            top: 15%;
-            left: -400px; /* За экраном */
-            width: 350px; /* Размер картинки самолёта */
-            animation: flyAcross 5s linear forwards;
-            z-index: 10;
-        }
-
-        #plane-container img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        @keyframes flyAcross {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(calc(100vw + 600px)); }
-        }
-
-        /* --- СИСТЕМА СБРОСА КОРОБКИ --- */
-        #box-drop-zone {
-            position: absolute;
-            top: 70%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100px;
-            height: 100px;
-            z-index: 5;
-        }
-
-        /* Падение */
-        #falling-box-container {
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            transform: translateY(calc(-35vh - 50px)); /* Высота самолёта */
-            transition: transform 1.2s cubic-bezier(0.6, 0.04, 0.98, 0.33), opacity 0.1s;
-        }
-
-        #falling-box-container.dropped {
-            opacity: 1;
-            transform: translateY(15vh); /* Падает на землю (чуть ниже центра) */
-        }
-
-        /* Зум камеры */
-        #zoom-wrapper {
-            position: relative;
-            width: 100px;
-            height: 100px;
-            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #zoom-wrapper.zoomed {
-            transform: scale(3.5) translateY(-20px);
-        }
-
-        /* Коробка */
-        #box {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        .panel {
-            position: absolute;
-            background-color: #CD853F;
-            border: 2px solid #8B4513;
             box-sizing: border-box;
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px); /* Текстура картона */
-            transition: all 1s ease-out;
+            user-select: none;
         }
 
-        .panel-top    { top: 0;    left: 0; width: 100%; height: 50%; z-index: 3; transform-origin: top center; }
-        .panel-bottom { bottom: 0; left: 0; width: 100%; height: 50%; z-index: 3; transform-origin: bottom center; }
-        .panel-left   { top: 0;    left: 0; width: 50%; height: 100%; transform-origin: center left; z-index: 2; }
-        .panel-right  { top: 0;    right: 0; width: 50%; height: 100%; transform-origin: center right; z-index: 2;}
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 30%, #FFD6A5 60%, #FDE2C4 100%);
+            background-attachment: fixed;
+            font-family: 'Segoe UI', 'Poppins', 'Comic Neue', system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            animation: bgFlow 12s infinite alternate;
+        }
 
-        /* Текст внутри */
-        #text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.5);
-            opacity: 0;
-            color: #fff;
-            background-color: #e74c3c;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 14px;
+        @keyframes bgFlow {
+            0% {
+                background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 30%, #FFD6A5 60%, #FDE2C4 100%);
+            }
+            100% {
+                background: linear-gradient(225deg, #FBC2EB 0%, #A6C1FF 30%, #F5B042 70%, #FFE0A3 100%);
+            }
+        }
+
+        /* счётчик в левом верхнем углу */
+        .candy-counter {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,240,0.5);
+            z-index: 100;
+            transition: transform 0.2s ease;
+        }
+
+        .candy-counter span:first-child {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #FFE484;
+            text-shadow: 0 2px 5px #b45f1b;
+            background: #2c1a0e;
+            padding: 0 12px;
+            border-radius: 40px;
+            letter-spacing: 1px;
+        }
+
+        .candy-icon {
+            font-size: 2.3rem;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+            display: inline-block;
+            animation: bounceSoft 1.5s infinite ease;
+        }
+
+        @keyframes bounceSoft {
+            0%,100%{ transform: translateY(0); }
+            50%{ transform: translateY(-5px); }
+        }
+
+        /* главная карточка игры */
+        .game-container {
+            max-width: 700px;
+            width: 100%;
+            background: rgba(255, 250, 240, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 72px;
+            padding: 30px 28px 42px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255,255,255,0.6);
+            transition: all 0.3s ease;
+            text-align: center;
+            border: 2px solid rgba(255,215,150,0.9);
+        }
+
+        /* кнопка старта */
+        .start-btn {
+            background: linear-gradient(120deg, #ff9a3c, #ff5e7c);
+            border: none;
+            font-size: 2rem;
+            font-weight: bold;
+            padding: 18px 40px;
+            border-radius: 60px;
+            color: white;
+            text-shadow: 0 2px 4px #a1220a;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #a1301a;
+            transition: all 0.1s linear;
+            font-family: inherit;
+            letter-spacing: 2px;
+            margin-top: 20px;
+        }
+
+        .start-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 6px 0 #a1301a;
+        }
+
+        /* зона вопроса */
+        .quiz-area {
+            transition: opacity 0.4s ease, transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+
+        .question-text {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b2a1f, #b45f2b);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 32px;
+            padding: 0 8px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+            margin: 20px 0 25px;
+        }
+
+        .option-btn {
+            background: #fef2df;
+            border: 3px solid #ffbc6e;
+            border-radius: 60px;
+            padding: 16px 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #4f2d1a;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 5px 0 #d68b3c;
+        }
+
+        .option-btn:hover {
+            transform: scale(0.97);
+            background: #ffe3b5;
+            border-color: #ff9f3a;
+        }
+
+        .option-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #d68b3c;
+        }
+
+        /* уведомление (тост) */
+        .toast-message {
+            background: #2c2c2ce6;
+            color: #ffe5b4;
+            padding: 10px 20px;
+            border-radius: 40px;
+            display: inline-block;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-top: 15px;
+            backdrop-filter: blur(12px);
+            transition: 0.2s;
+            animation: fadeSlide 0.3s ease;
+        }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(20px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+
+        /* финальный блок */
+        .final-area {
+            animation: glowPulse 0.6s ease;
+            background: rgba(0,0,0,0.4);
+            border-radius: 60px;
+            padding: 24px;
+        }
+
+        .win-title {
+            font-size: 3rem;
             font-weight: 900;
-            white-space: nowrap;
-            text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s;
-            z-index: 1;
+            color: #FFD966;
+            text-shadow: 0 5px 0 #aa5c1c;
         }
 
-        /* Анимация распада */
-        #box.open .panel-top    { transform: translateY(-50px) rotateX(90deg); opacity: 0; }
-        #box.open .panel-bottom { transform: translateY(50px) rotateX(-90deg); opacity: 0; }
-        #box.open .panel-left   { transform: translateX(-50px) rotateY(-90deg); opacity: 0; }
-        #box.open .panel-right  { transform: translateX(50px) rotateY(90deg); opacity: 0; }
+        .candy-final-count {
+            font-size: 2.5rem;
+            background: white;
+            display: inline-block;
+            padding: 10px 25px;
+            border-radius: 80px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
 
-        #box.open #text {
+        .sad-face {
+            font-size: 5rem;
+            filter: drop-shadow(0 4px 6px black);
+        }
+
+        .restart-btn {
+            background: #ffbe76;
+            color: #3c2a1f;
+            border: none;
+            font-size: 1.4rem;
+            font-weight: bold;
+            padding: 12px 32px;
+            border-radius: 50px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+
+        .restart-btn:hover {
+            background: #ffa54d;
+            transform: scale(0.96);
+        }
+
+        .hide {
+            display: none !important;
+        }
+
+        button {
+            background: none;
+            border: none;
+        }
+
+        .disabled-click {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* плавные переходы */
+        .fade-out {
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .fade-in {
             opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
+            transform: translateY(0);
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
     </style>
 </head>
 <body>
 
-    <div id="scenery">
-        <div class="sun"></div>
-        <div class="cloud cloud1"></div>
-        <div class="cloud cloud2"></div>
-        <div class="cloud cloud3"></div>
-        <div class="ground">
-            <div class="lake"></div>
-        </div>
-        <div class="trees">
-            🌳 🌲 🌳 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🌲 🌳 🌲 🌲 &nbsp;&nbsp;&nbsp;&nbsp; 🌳
-        </div>
+<div class="candy-counter">
+    <span id="scoreValue">0</span>
+    <div class="candy-icon">🍬</div>
+</div>
+
+<div class="game-container" id="gameContainer">
+    <!-- зона кнопки старта -->
+    <div id="startScreen">
+        <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 20px;">🍭 Сладкая Викторина 🍬</div>
+        <button class="start-btn" id="startGameBtn">🍬 НАЧАТЬ ИГРУ 🍬</button>
     </div>
 
-    <div id="plane-container">
-        <img src="zknd_khmf_211025.png" alt="Самолёт">
-    </div>
-
-    <div id="box-drop-zone">
-        <div id="falling-box-container">
-            <div id="zoom-wrapper">
-                <div id="box">
-                    <div id="text">Списать время</div>
-                    <div class="panel panel-top"></div>
-                    <div class="panel panel-bottom"></div>
-                    <div class="panel panel-left"></div>
-                    <div class="panel panel-right"></div>
-                </div>
-            </div>
+    <!-- зона викторины (вопросы) -->
+    <div id="quizScreen" class="hide">
+        <div class="quiz-area" id="quizArea">
+            <div class="question-text" id="questionText"></div>
+            <div class="options-grid" id="optionsContainer"></div>
+            <div id="messageArea" style="min-height: 70px;"></div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const fallingContainer = document.getElementById('falling-box-container');
-            const zoomWrapper = document.getElementById('zoom-wrapper');
-            const box = document.getElementById('box');
-            const scenery = document.getElementById('scenery');
+    <!-- финальная зона -->
+    <div id="finalScreen" class="hide"></div>
+</div>
 
-            // 1. Самолёт по центру экрана примерно на 2.3-2.4 секунде. Сбрасываем коробку.
-            setTimeout(() => {
-                fallingContainer.classList.add('dropped');
-            }, 2400);
+<script>
+    // ---------- ВОПРОСЫ ----------
+    const QUESTIONS = [
+        {
+            text: "Три месяца зимы",
+            options: ["март, апрель, май", "июнь, июль, август", "сентябрь, октябрь, ноябрь", "декабрь, январь, февраль"],
+            correctIndex: 3   // четвертый
+        },
+        {
+            text: "Сколько колёс у обычной машины",
+            options: ["1", "4", "2", "3"],
+            correctIndex: 1   // 4
+        },
+        {
+            text: "Что нужно сейчас сделать",
+            options: ["Начать тестировать новую нф", "Завести ещё один баг", "Списать время", "Собрать всех на созвон"],
+            correctIndex: 2   // Списать время
+        }
+    ];
 
-            // 2. Коробка приземляется (на это уходит 1.2 сек). Запускаем зум и размываем фон.
-            setTimeout(() => {
-                zoomWrapper.classList.add('zoomed');
-                scenery.classList.add('blur'); // Фокус только на коробке
-            }, 3600);
+    // DOM элементы
+    const startScreenDiv = document.getElementById('startScreen');
+    const quizScreenDiv = document.getElementById('quizScreen');
+    const finalScreenDiv = document.getElementById('finalScreen');
+    const startBtn = document.getElementById('startGameBtn');
+    const scoreSpan = document.getElementById('scoreValue');
+    const questionTextEl = document.getElementById('questionText');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const messageArea = document.getElementById('messageArea');
+    const quizArea = document.getElementById('quizArea');
 
-            // 3. Зум завершается, коробка разваливается, показывая текст.
+    // Состояния игры
+    let currentQuestionIndex = 0;      // 0,1,2
+    let candyCount = 0;                // текущий счёт
+    let gameActive = false;            // находится ли игра в процессе (вопросы активны)
+    let waitingForTransition = false;   // блокировка кликов во время анимации/паузы
+    let gameFinished = false;           // игра завершена (чтобы не вызывать финал повторно)
+
+    // Обновление счетчика на UI
+    function updateScoreUI() {
+        scoreSpan.textContent = candyCount;
+    }
+
+    // Показать короткое уведомление
+    function showMessage(text, isError = false) {
+        messageArea.innerHTML = `<div class="toast-message" style="background: ${isError ? '#8b2c1dcc' : '#2c5a2ccc'};">${text}</div>`;
+        setTimeout(() => {
+            if (messageArea.firstChild) messageArea.firstChild.style.opacity = '0';
             setTimeout(() => {
-                box.classList.add('open');
-            }, 5100);
+                if (messageArea.innerHTML.includes(text)) messageArea.innerHTML = '';
+            }, 300);
+        }, 1200);
+    }
+
+    // Плавная смена вопроса (анимация исчезновения/появления)
+    async function transitionToNextQuestion(nextQuestionIndex) {
+        if (!gameActive || gameFinished) return;
+        waitingForTransition = true;
+        quizArea.classList.add('fade-out');
+        await new Promise(resolve => setTimeout(resolve, 280));
+        
+        if (!gameActive || gameFinished) {
+            quizArea.classList.remove('fade-out');
+            waitingForTransition = false;
+            return;
+        }
+        
+        currentQuestionIndex = nextQuestionIndex;
+        
+        if (currentQuestionIndex < QUESTIONS.length) {
+            renderCurrentQuestion();
+            quizArea.classList.remove('fade-out');
+            quizArea.classList.add('fade-in');
+            await new Promise(resolve => setTimeout(resolve, 100));
+            quizArea.classList.remove('fade-in');
+        } else {
+            quizArea.classList.remove('fade-out');
+        }
+        waitingForTransition = false;
+    }
+
+    // Отрисовка текущего вопроса
+    function renderCurrentQuestion() {
+        if (!gameActive || gameFinished) return;
+        const q = QUESTIONS[currentQuestionIndex];
+        questionTextEl.textContent = q.text;
+        optionsContainer.innerHTML = '';
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.dataset.optIndex = idx;
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!gameActive || waitingForTransition || gameFinished) return;
+                handleAnswer(idx);
+            });
+            optionsContainer.appendChild(btn);
         });
-    </script>
+        messageArea.innerHTML = '';
+    }
+
+    // Обработка ответа (с разным весом для последнего вопроса)
+    function handleAnswer(selectedIdx) {
+        if (!gameActive || waitingForTransition || gameFinished) return;
+        
+        const currentQ = QUESTIONS[currentQuestionIndex];
+        const isCorrect = (selectedIdx === currentQ.correctIndex);
+        const isLast = (currentQuestionIndex === QUESTIONS.length - 1);
+        
+        // Определяем изменение счёта: для последнего вопроса ±1000, для остальных ±1
+        let delta;
+        if (isLast) {
+            delta = isCorrect ? 1000 : -1000;
+        } else {
+            delta = isCorrect ? 1 : -1;
+        }
+        
+        candyCount += delta;
+        updateScoreUI();
+        
+        // Уведомление
+        if (isCorrect) {
+            if (isLast) {
+                showMessage(`✅ ПРАВИЛЬНО! +1000 КОНФЕТ 🍬🍬🍬`, false);
+            } else {
+                showMessage("✅ ПРАВИЛЬНЫЙ ОТВЕТ! +1 конфета 🍬", false);
+            }
+        } else {
+            if (isLast) {
+                showMessage(`❌ НЕВЕРНО! -1000 КОНФЕТ 😭`, true);
+            } else {
+                showMessage("❌ НЕПРАВИЛЬНО! -1 конфета 😢", true);
+            }
+        }
+        
+        waitingForTransition = true;
+        
+        if (isLast) {
+            // Третий вопрос — завершаем игру после небольшой паузы
+            setTimeout(() => {
+                if (gameActive && !gameFinished) {
+                    endGameAfterLastAnswer(isCorrect);
+                }
+                waitingForTransition = false;
+            }, 1000);
+        } else {
+            // Не последний вопрос — переход к следующему
+            setTimeout(async () => {
+                if (!gameActive || gameFinished) {
+                    waitingForTransition = false;
+                    return;
+                }
+                const nextIndex = currentQuestionIndex + 1;
+                await transitionToNextQuestion(nextIndex);
+                waitingForTransition = false;
+            }, 1200);
+        }
+    }
+    
+    // Финал игры после ответа на последний вопрос
+    async function endGameAfterLastAnswer(isLastAnswerCorrect) {
+        if (gameFinished) return;
+        gameActive = false;
+        gameFinished = true;
+        
+        // Плавно скрываем викторину
+        quizArea.classList.add('fade-out');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        quizScreenDiv.classList.add('hide');
+        
+        // Определяем финальное отображение
+        if (isLastAnswerCorrect) {
+            // ПОБЕДА! Запускаем мощный взрыв (конфетти)
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 300, spread: 120, origin: { y: 0.6 }, startVelocity: 30, colors: ['#ffcc33', '#ff9933', '#ff66cc', '#aaffdd'] });
+                confetti({ particleCount: 100, spread: 80, origin: { y: 0.7, x: 0.2 }, decay: 0.9 });
+                confetti({ particleCount: 100, spread: 80, origin: { y: 0.7, x: 0.8 }, decay: 0.9 });
+                setTimeout(() => {
+                    confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, startVelocity: 20 });
+                }, 150);
+            } else {
+                console.warn("confetti library not loaded");
+            }
+            
+            const winCandies = candyCount;
+            finalScreenDiv.innerHTML = `
+                <div class="final-area">
+                    <div class="win-title">🎉 ПОБЕДА! 🎉</div>
+                    <div style="font-size:2rem; margin-top:10px;">🍬 Выиграно конфет:</div>
+                    <div class="candy-final-count">${winCandies} 🍬</div>
+                    <button class="restart-btn" id="restartFinalBtn">🍭 Сыграть снова 🍭</button>
+                </div>
+            `;
+        } else {
+            // Последний ответ неверный: проверяем итоговый баланс
+            if (candyCount < 0) {
+                finalScreenDiv.innerHTML = `
+                    <div class="final-area">
+                        <div class="sad-face">😢😟😭</div>
+                        <div style="font-size: 2rem; font-weight: bold; margin: 15px 0; color:#5a2e1a;">НИЧЕГО НЕ ВЫИГРАНО</div>
+                        <div style="font-size:1.6rem;">🍬 Ваш баланс: ${candyCount} конфет</div>
+                        <button class="restart-btn" id="restartFinalBtn">🍬 Попробовать снова 🍬</button>
+                    </div>
+                `;
+            } else {
+                finalScreenDiv.innerHTML = `
+                    <div class="final-area">
+                        <div style="font-size: 2.8rem; font-weight: bold; background: linear-gradient(45deg,#f09819,#ff6a00); background-clip:text; -webkit-background-clip:text; color:transparent;">ИГРА ЗАВЕРШЕНА</div>
+                        <div style="font-size:2rem; margin-top:10px;">🍬 Конфет заработано:</div>
+                        <div class="candy-final-count">${candyCount} 🍬</div>
+                        <button class="restart-btn" id="restartFinalBtn">🎮 Играть заново 🎮</button>
+                    </div>
+                `;
+            }
+        }
+        
+        finalScreenDiv.classList.remove('hide');
+        const restartButton = document.getElementById('restartFinalBtn');
+        if (restartButton) {
+            restartButton.addEventListener('click', () => {
+                fullResetAndRestart();
+            });
+        }
+    }
+    
+    // Полный сброс и рестарт игры
+    function fullResetAndRestart() {
+        currentQuestionIndex = 0;
+        candyCount = 0;
+        gameActive = false;
+        waitingForTransition = false;
+        gameFinished = false;
+        updateScoreUI();
+        
+        finalScreenDiv.classList.add('hide');
+        quizScreenDiv.classList.add('hide');
+        startScreenDiv.classList.remove('hide');
+        
+        if (messageArea) messageArea.innerHTML = '';
+        optionsContainer.innerHTML = '';
+        quizArea.classList.remove('fade-out', 'fade-in');
+    }
+    
+    // Функция запуска новой игры (по кнопке "Начать игру")
+    function initNewGame() {
+        currentQuestionIndex = 0;
+        candyCount = 0;
+        gameActive = true;
+        waitingForTransition = false;
+        gameFinished = false;
+        updateScoreUI();
+        
+        startScreenDiv.classList.add('hide');
+        finalScreenDiv.classList.add('hide');
+        quizScreenDiv.classList.remove('hide');
+        
+        messageArea.innerHTML = '';
+        quizArea.classList.remove('fade-out', 'fade-in');
+        
+        renderCurrentQuestion();
+        quizArea.classList.add('fade-in');
+        setTimeout(() => {
+            if (quizArea) quizArea.classList.remove('fade-in');
+        }, 300);
+    }
+    
+    // обработчик кнопки старта
+    startBtn.addEventListener('click', () => {
+        if (!gameFinished && !gameActive) {
+            initNewGame();
+        } else {
+            fullResetAndRestart();
+            initNewGame();
+        }
+    });
+    
+    // Дополнительная страховка: если библиотека конфетти не загрузилась, чтобы не было ошибок
+    if (typeof confetti !== 'function') {
+        window.confetti = function() { console.log("confetti fallback"); };
+    }
+    
+    console.log("Candy quiz ready — последний вопрос ±1000, взрыв работает!");
+</script>
 </body>
 </html>
