@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Candy Quiz - Леденцовая викторина</title>
-    <!-- Canvas Confetti для анимации взрыва (правильное имя функции confetti) -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <title>Списать время — Точное приближение к монитору</title>
     <style>
         * {
             margin: 0;
@@ -15,562 +13,643 @@
         }
 
         body {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 30%, #FFD6A5 60%, #FDE2C4 100%);
-            background-attachment: fixed;
-            font-family: 'Segoe UI', 'Poppins', 'Comic Neue', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            background: #1a1e2c;
+        }
+
+        /* ГЛАВНЫЙ КОНТЕЙНЕР СЦЕНЫ (комната) */
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            transition: transform 1.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transform-origin: 0 0;  /* будем управлять через JS, здесь для анимации */
+            will-change: transform;
+        }
+
+        /* СЕРАЯ КОМНАТА (фон) */
+        .room {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #4a4f5e;
+            background-image: radial-gradient(circle at 20% 40%, #5a6070 2%, #3a3f4c 80%);
+            transition: opacity 0.8s ease;
+        }
+
+        /* ОКНО — большое */
+        .window {
+            position: absolute;
+            top: 8%;
+            right: 6%;
+            width: 320px;
+            height: 380px;
+            background: #a0aab5;
+            border-radius: 24px 24px 16px 16px;
+            border: 10px solid #6b5e4a;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+
+        .window-glass {
+            width: 100%;
+            height: 100%;
+            background: #b3c2d1;
+            position: relative;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            position: relative;
-            animation: bgFlow 12s infinite alternate;
         }
 
-        @keyframes bgFlow {
-            0% {
-                background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 30%, #FFD6A5 60%, #FDE2C4 100%);
-            }
-            100% {
-                background: linear-gradient(225deg, #FBC2EB 0%, #A6C1FF 30%, #F5B042 70%, #FFE0A3 100%);
-            }
-        }
-
-        /* счётчик в левом верхнем углу */
-        .candy-counter {
-            position: fixed;
-            top: 24px;
-            left: 24px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            border-radius: 60px;
-            padding: 12px 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,240,0.5);
-            z-index: 100;
-            transition: transform 0.2s ease;
-        }
-
-        .candy-counter span:first-child {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #FFE484;
-            text-shadow: 0 2px 5px #b45f1b;
-            background: #2c1a0e;
-            padding: 0 12px;
-            border-radius: 40px;
-            letter-spacing: 1px;
-        }
-
-        .candy-icon {
-            font-size: 2.3rem;
-            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
-            display: inline-block;
-            animation: bounceSoft 1.5s infinite ease;
-        }
-
-        @keyframes bounceSoft {
-            0%,100%{ transform: translateY(0); }
-            50%{ transform: translateY(-5px); }
-        }
-
-        /* главная карточка игры */
-        .game-container {
-            max-width: 700px;
+        .cloudy {
+            position: absolute;
             width: 100%;
-            background: rgba(255, 250, 240, 0.85);
-            backdrop-filter: blur(12px);
-            border-radius: 72px;
-            padding: 30px 28px 42px;
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255,255,255,0.6);
-            transition: all 0.3s ease;
-            text-align: center;
-            border: 2px solid rgba(255,215,150,0.9);
+            height: 100%;
         }
 
-        /* кнопка старта */
-        .start-btn {
-            background: linear-gradient(120deg, #ff9a3c, #ff5e7c);
-            border: none;
-            font-size: 2rem;
-            font-weight: bold;
-            padding: 18px 40px;
-            border-radius: 60px;
-            color: white;
-            text-shadow: 0 2px 4px #a1220a;
-            cursor: pointer;
-            box-shadow: 0 10px 0 #a1301a;
-            transition: all 0.1s linear;
-            font-family: inherit;
-            letter-spacing: 2px;
-            margin-top: 20px;
-        }
-
-        .start-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 6px 0 #a1301a;
-        }
-
-        /* зона вопроса */
-        .quiz-area {
-            transition: opacity 0.4s ease, transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-        }
-
-        .question-text {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #3b2a1f, #b45f2b);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            margin-bottom: 32px;
-            padding: 0 8px;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 18px;
-            margin: 20px 0 25px;
-        }
-
-        .option-btn {
-            background: #fef2df;
-            border: 3px solid #ffbc6e;
-            border-radius: 60px;
-            padding: 16px 8px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #4f2d1a;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-            backdrop-filter: blur(4px);
-            box-shadow: 0 5px 0 #d68b3c;
-        }
-
-        .option-btn:hover {
-            transform: scale(0.97);
-            background: #ffe3b5;
-            border-color: #ff9f3a;
-        }
-
-        .option-btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #d68b3c;
-        }
-
-        /* уведомление (тост) */
-        .toast-message {
-            background: #2c2c2ce6;
-            color: #ffe5b4;
-            padding: 10px 20px;
-            border-radius: 40px;
-            display: inline-block;
-            font-weight: bold;
-            font-size: 1rem;
-            margin-top: 15px;
-            backdrop-filter: blur(12px);
-            transition: 0.2s;
-            animation: fadeSlide 0.3s ease;
-        }
-
-        @keyframes fadeSlide {
-            from { opacity: 0; transform: translateY(20px);}
-            to { opacity: 1; transform: translateY(0);}
-        }
-
-        /* финальный блок */
-        .final-area {
-            animation: glowPulse 0.6s ease;
-            background: rgba(0,0,0,0.4);
-            border-radius: 60px;
-            padding: 24px;
-        }
-
-        .win-title {
-            font-size: 3rem;
-            font-weight: 900;
-            color: #FFD966;
-            text-shadow: 0 5px 0 #aa5c1c;
-        }
-
-        .candy-final-count {
-            font-size: 2.5rem;
-            background: white;
-            display: inline-block;
-            padding: 10px 25px;
-            border-radius: 80px;
-            margin: 15px 0;
-            font-weight: bold;
-        }
-
-        .sad-face {
-            font-size: 5rem;
-            filter: drop-shadow(0 4px 6px black);
-        }
-
-        .restart-btn {
-            background: #ffbe76;
-            color: #3c2a1f;
-            border: none;
-            font-size: 1.4rem;
-            font-weight: bold;
-            padding: 12px 32px;
-            border-radius: 50px;
-            margin-top: 20px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-family: inherit;
-        }
-
-        .restart-btn:hover {
-            background: #ffa54d;
-            transform: scale(0.96);
-        }
-
-        .hide {
-            display: none !important;
-        }
-
-        button {
-            background: none;
-            border: none;
-        }
-
-        .disabled-click {
-            pointer-events: none;
+        .cloud {
+            position: absolute;
+            background: #7f8c8d;
+            border-radius: 80%;
+            filter: blur(8px);
             opacity: 0.7;
         }
 
-        /* плавные переходы */
-        .fade-out {
-            opacity: 0;
-            transform: translateY(15px);
-            transition: opacity 0.25s ease, transform 0.25s ease;
+        .cloud1 { width: 100px; height: 70px; top: 30px; left: 20px; }
+        .cloud2 { width: 140px; height: 90px; top: 110px; left: 150px; }
+        .cloud3 { width: 80px; height: 60px; top: 220px; left: 40px; }
+
+        .rain-drop {
+            position: absolute;
+            width: 3px;
+            height: 14px;
+            background: #8ba0bb;
+            opacity: 0.6;
+            animation: rain 1s infinite linear;
         }
 
-        .fade-in {
+        @keyframes rain {
+            0% { transform: translateY(-30px); opacity: 0; }
+            100% { transform: translateY(160px); opacity: 0.6; }
+        }
+
+        /* СТОЛ — крупнее */
+        .desk {
+            position: absolute;
+            bottom: 5%;
+            left: 12%;
+            width: 60%;
+            height: 22%;
+            background: #8b5a2b;
+            border-radius: 50px 50px 18px 18px;
+            box-shadow: 0 -10px 0 #5a3a1a;
+            z-index: 2;
+        }
+
+        /* СТУЛ */
+        .chair {
+            position: absolute;
+            bottom: 2%;
+            left: 30%;
+            width: 140px;
+            height: 170px;
+            background: #5e3a1c;
+            border-radius: 40px 40px 20px 20px;
+            z-index: 1;
+        }
+        .chair-back {
+            position: absolute;
+            top: -70px;
+            left: 25px;
+            width: 90px;
+            height: 100px;
+            background: #6f4a22;
+            border-radius: 30px;
+        }
+
+        /* МОНИТОР — увеличенный */
+        .monitor {
+            position: absolute;
+            bottom: 10%;
+            left: 35%;
+            width: 420px;
+            height: 310px;
+            background: #2c2e3a;
+            border-radius: 24px;
+            box-shadow: 0 20px 30px black;
+            z-index: 5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .screen {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: calc(100% - 40px);
+            height: calc(100% - 60px);
+            background: #0f1722;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #c0e0ff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
+            overflow-y: auto;
+        }
+        .screen-initial {
+            font-size: 1.4rem;
+            opacity: 0.8;
+        }
+        .stand {
+            position: absolute;
+            bottom: -22px;
+            left: 160px;
+            width: 100px;
+            height: 30px;
+            background: #111;
+            border-radius: 10px;
+        }
+
+        /* ВНУТРЕННИЙ ИНТЕРФЕЙС МОНИТОРА (вопросы) */
+        .quiz-on-screen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+        }
+        .question-monitor {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #FFE6B0;
+            text-shadow: 0 2px 2px black;
+            margin-bottom: 15px;
+        }
+        .options-monitor {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .opt-btn-monitor {
+            background: #2c3e4e;
+            border: 2px solid #ffb347;
+            color: #ffefcf;
+            font-size: 1.4rem;
+            padding: 8px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.1s;
+            font-weight: bold;
+        }
+        .opt-btn-monitor:active {
+            transform: scale(0.96);
+        }
+        .info-monitor {
+            margin-top: 20px;
+            font-size: 1rem;
+            background: #000000aa;
+            padding: 8px;
+            border-radius: 40px;
+            color: #ffd966;
+        }
+
+        /* СЦЕНА ПЛЯЖА (финальная) */
+        .beach-scene {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #f9d976, #f39f86);
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.8s ease;
+            overflow: hidden;
+        }
+        .beach-scene.active {
+            visibility: visible;
             opacity: 1;
-            transform: translateY(0);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .sun {
+            position: absolute;
+            top: 12%;
+            right: 10%;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #ffdd77, #ffaa33);
+            border-radius: 50%;
+            box-shadow: 0 0 60px #ffcc55;
+            animation: sunGlow 3s infinite alternate;
+        }
+        @keyframes sunGlow {
+            0% { transform: scale(1); opacity: 0.9;}
+            100% { transform: scale(1.1); opacity: 1;}
+        }
+        .palm {
+            position: absolute;
+            bottom: 5%;
+            left: 8%;
+            width: 100px;
+            height: 260px;
+            background: #8B5A2B;
+            border-radius: 50px;
+        }
+        .palm-leaves {
+            position: absolute;
+            bottom: 230px;
+            left: -35px;
+            width: 170px;
+            height: 120px;
+            background: #2e7d32;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            border-radius: 50% 20% 50% 20%;
+            transform: rotate(-15deg);
+        }
+        .palm-leaves2 {
+            left: 15px;
+            transform: rotate(20deg);
+            background: #3c9e3a;
+        }
+        .cloud-sunny {
+            position: absolute;
+            background: #fff9e8;
+            border-radius: 80%;
+            filter: drop-shadow(2px 4px 10px rgba(0,0,0,0.2));
+            animation: floatCloud 7s infinite alternate;
+        }
+        @keyframes floatCloud {
+            0% { transform: translateX(0px);}
+            100% { transform: translateX(35px);}
+        }
+        .bird {
+            position: absolute;
+            font-size: 2.5rem;
+            animation: flyBird 8s infinite alternate;
+        }
+        @keyframes flyBird {
+            0% { transform: translate(0, 0);}
+            100% { transform: translate(50px, -25px);}
+        }
+        .beach-text {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(10px);
+            padding: 20px 45px;
+            border-radius: 100px;
+            color: #fff7cf;
+            text-shadow: 5px 5px 0 #d47f2c;
+            z-index: 10;
+            letter-spacing: 2px;
+        }
+        .restart-beach {
+            margin-top: 45px;
+            background: #ffb347;
+            border: none;
+            padding: 14px 35px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+
+        /* СЕКРЕТНАЯ КНОПКА ЛЕВЫЙ НИЖНИЙ УГОЛ */
+        .secret-fix {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 160px;
+            height: 100px;
+            background: transparent;
+            z-index: 999;
+            cursor: pointer;
+        }
+
+        .hide {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-<div class="candy-counter">
-    <span id="scoreValue">0</span>
-    <div class="candy-icon">🍬</div>
-</div>
-
-<div class="game-container" id="gameContainer">
-    <!-- зона кнопки старта -->
-    <div id="startScreen">
-        <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 20px;">🍭 Сладкая Викторина 🍬</div>
-        <button class="start-btn" id="startGameBtn">🍬 НАЧАТЬ ИГРУ 🍬</button>
-    </div>
-
-    <!-- зона викторины (вопросы) -->
-    <div id="quizScreen" class="hide">
-        <div class="quiz-area" id="quizArea">
-            <div class="question-text" id="questionText"></div>
-            <div class="options-grid" id="optionsContainer"></div>
-            <div id="messageArea" style="min-height: 70px;"></div>
+<div class="scene" id="scene">
+    <div class="room" id="room">
+        <!-- ОКНО -->
+        <div class="window">
+            <div class="window-glass">
+                <div class="cloudy">
+                    <div class="cloud cloud1"></div>
+                    <div class="cloud cloud2"></div>
+                    <div class="cloud cloud3"></div>
+                    <div id="rainContainer"></div>
+                </div>
+            </div>
+        </div>
+        <div class="desk"></div>
+        <div class="chair">
+            <div class="chair-back"></div>
+        </div>
+        <!-- МОНИТОР -->
+        <div class="monitor" id="monitor">
+            <div class="screen" id="screenArea">
+                <div class="screen-initial">💻 WORK <br> <span style="font-size:0.9rem;">нажми или жди 3с...</span></div>
+            </div>
+            <div class="stand"></div>
         </div>
     </div>
+</div>
 
-    <!-- финальная зона -->
-    <div id="finalScreen" class="hide"></div>
+<!-- НЕВИДИМАЯ КНОПКА ЛЕВЫЙ НИЖНИЙ УГОЛ -->
+<div id="secretFixBtn" class="secret-fix"></div>
+
+<!-- ПЛЯЖНАЯ СЦЕНА -->
+<div id="beachScene" class="beach-scene">
+    <div class="sun"></div>
+    <div class="palm">
+        <div class="palm-leaves"></div>
+        <div class="palm-leaves palm-leaves2"></div>
+    </div>
+    <div class="cloud-sunny" style="top:15%; left:20%; width:130px; height:70px;"></div>
+    <div class="cloud-sunny" style="top:30%; left:70%; width:160px; height:80px;"></div>
+    <div class="bird" style="top:20%; left:50%;">🐦</div>
+    <div class="bird" style="top:40%; left:20%;">🕊️</div>
+    <div class="bird" style="top:10%; left:75%;">🐧</div>
+    <div style="position: absolute; bottom:5%; right:12%; font-size: 5rem;">🏖️⛱️🍹</div>
+    <div class="beach-text">Счастливого отпуска!</div>
+    <button class="restart-beach" id="beachRestartBtn">🏝️ Начать заново</button>
 </div>
 
 <script>
-    // ---------- ВОПРОСЫ ----------
-    const QUESTIONS = [
-        {
-            text: "Три месяца зимы",
-            options: ["март, апрель, май", "июнь, июль, август", "сентябрь, октябрь, ноябрь", "декабрь, январь, февраль"],
-            correctIndex: 3   // четвертый
-        },
-        {
-            text: "Сколько колёс у обычной машины",
-            options: ["1", "4", "2", "3"],
-            correctIndex: 1   // 4
-        },
-        {
-            text: "Что нужно сейчас сделать",
-            options: ["Начать тестировать новую нф", "Завести ещё один баг", "Списать время", "Собрать всех на созвон"],
-            correctIndex: 2   // Списать время
+    // -------- ЭЛЕМЕНТЫ ----------
+    const scene = document.getElementById('scene');
+    const roomDiv = document.getElementById('room');
+    const monitorElem = document.getElementById('monitor');
+    const screenArea = document.getElementById('screenArea');
+    const secretBtn = document.getElementById('secretFixBtn');
+    const beachSceneDiv = document.getElementById('beachScene');
+    const beachRestart = document.getElementById('beachRestartBtn');
+
+    // Состояния
+    let currentStep = 'room';       // room, zoomAnim, question1, question2, beach
+    let zoomTimeout = null;
+    let question1Active = false;
+    let question2Active = false;
+    let isSecondYesBroken = false;
+    let secondYesButtonElement = null;
+
+    // Функция для генерации дождя
+    function createRain() {
+        const rainContainer = document.getElementById('rainContainer');
+        if (!rainContainer) return;
+        rainContainer.innerHTML = '';
+        for (let i = 0; i < 50; i++) {
+            const drop = document.createElement('div');
+            drop.classList.add('rain-drop');
+            drop.style.left = Math.random() * 100 + '%';
+            drop.style.animationDelay = Math.random() * 2 + 's';
+            drop.style.animationDuration = 0.7 + Math.random() * 0.6 + 's';
+            rainContainer.appendChild(drop);
         }
-    ];
+    }
+    createRain();
 
-    // DOM элементы
-    const startScreenDiv = document.getElementById('startScreen');
-    const quizScreenDiv = document.getElementById('quizScreen');
-    const finalScreenDiv = document.getElementById('finalScreen');
-    const startBtn = document.getElementById('startGameBtn');
-    const scoreSpan = document.getElementById('scoreValue');
-    const questionTextEl = document.getElementById('questionText');
-    const optionsContainer = document.getElementById('optionsContainer');
-    const messageArea = document.getElementById('messageArea');
-    const quizArea = document.getElementById('quizArea');
-
-    // Состояния игры
-    let currentQuestionIndex = 0;      // 0,1,2
-    let candyCount = 0;                // текущий счёт
-    let gameActive = false;            // находится ли игра в процессе (вопросы активны)
-    let waitingForTransition = false;   // блокировка кликов во время анимации/паузы
-    let gameFinished = false;           // игра завершена (чтобы не вызывать финал повторно)
-
-    // Обновление счетчика на UI
-    function updateScoreUI() {
-        scoreSpan.textContent = candyCount;
+    // Полный рестарт игры
+    function fullRestart() {
+        beachSceneDiv.classList.remove('active');
+        // Сбрасываем трансформацию сцены
+        scene.style.transform = '';
+        currentStep = 'room';
+        question1Active = false;
+        question2Active = false;
+        isSecondYesBroken = false;
+        secondYesButtonElement = null;
+        screenArea.innerHTML = `<div class="screen-initial">💻 WORK <br> <span style="font-size:0.9rem;">нажми или жди 3с...</span></div>`;
+        if (zoomTimeout) clearTimeout(zoomTimeout);
+        startZoomSequence();
+        // Восстанавливаем видимость комнаты
+        scene.style.opacity = '1';
+        roomDiv.style.opacity = '1';
     }
 
-    // Показать короткое уведомление
-    function showMessage(text, isError = false) {
-        messageArea.innerHTML = `<div class="toast-message" style="background: ${isError ? '#8b2c1dcc' : '#2c5a2ccc'};">${text}</div>`;
+    // ТОЧНОЕ ПРИБЛИЖЕНИЕ К МОНИТОРУ (вычисляем реальные координаты)
+    function performZoomToMonitor() {
+        if (currentStep !== 'room') return;
+        
+        // Получаем размеры окна и монитора
+        const monitorRect = monitorElem.getBoundingClientRect();
+        const winWidth = window.innerWidth;
+        const winHeight = window.innerHeight;
+        
+        // Цель: монитор должен занимать 80% ширины и 80% высоты экрана (но не искажаясь)
+        // Рассчитываем оптимальный масштаб, чтобы монитор вписался в 80% экрана
+        const targetWidthPercent = 0.8;
+        const targetHeightPercent = 0.8;
+        
+        // Желаемая ширина и высота после трансформации
+        const desiredWidth = winWidth * targetWidthPercent;
+        const desiredHeight = winHeight * targetHeightPercent;
+        
+        // Масштаб по ширине и высоте относительно текущих размеров монитора
+        let scaleX = desiredWidth / monitorRect.width;
+        let scaleY = desiredHeight / monitorRect.height;
+        let scale = Math.min(scaleX, scaleY); // чтобы не вылезало за границы
+        
+        // Но не слишком мелко: ограничим минимальным масштабом 1.2, чтобы точно было приближение
+        scale = Math.max(scale, 1.3);
+        
+        // Вычисляем смещение: нужно, чтобы центр монитора оказался в центре экрана после трансформации
+        // Текущий центр монитора относительно viewport
+        const centerX = monitorRect.left + monitorRect.width / 2;
+        const centerY = monitorRect.top + monitorRect.height / 2;
+        
+        // После применения scale координаты центра сдвинутся: newCenter = oldCenter * scale + translate
+        // Нам нужно, чтобы newCenter стал (winWidth/2, winHeight/2)
+        // translateX = winWidth/2 - centerX * scale
+        // translateY = winHeight/2 - centerY * scale
+        
+        const translateX = (winWidth / 2) - (centerX * scale);
+        const translateY = (winHeight / 2) - (centerY * scale);
+        
+        // Применяем трансформацию к сцене, плавно
+        scene.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        currentStep = 'zoomAnim';
+        
+        // Через время, достаточное для завершения анимации, показываем первый вопрос
         setTimeout(() => {
-            if (messageArea.firstChild) messageArea.firstChild.style.opacity = '0';
-            setTimeout(() => {
-                if (messageArea.innerHTML.includes(text)) messageArea.innerHTML = '';
-            }, 300);
+            if (currentStep === 'zoomAnim') {
+                showQuestion1OnMonitor();
+            }
         }, 1200);
     }
 
-    // Плавная смена вопроса (анимация исчезновения/появления)
-    async function transitionToNextQuestion(nextQuestionIndex) {
-        if (!gameActive || gameFinished) return;
-        waitingForTransition = true;
-        quizArea.classList.add('fade-out');
-        await new Promise(resolve => setTimeout(resolve, 280));
+    // Автозапуск через 3 секунды
+    function startZoomSequence() {
+        if (currentStep !== 'room') return;
+        zoomTimeout = setTimeout(() => {
+            if (currentStep === 'room') {
+                performZoomToMonitor();
+            }
+        }, 3000);
+    }
+
+    // Первый вопрос внутри монитора
+    function showQuestion1OnMonitor() {
+        currentStep = 'question1';
+        question1Active = true;
+        screenArea.innerHTML = `
+            <div class="quiz-on-screen">
+                <div class="question-monitor">❓ Ты писала время? ❓</div>
+                <div class="options-monitor">
+                    <button class="opt-btn-monitor" id="q1Yes">Да</button>
+                    <button class="opt-btn-monitor" id="q1No">Нет</button>
+                </div>
+                <div id="monitorInfo" class="info-monitor"></div>
+            </div>
+        `;
+        const yesBtn = document.getElementById('q1Yes');
+        const noBtn = document.getElementById('q1No');
+        const infoDiv = document.getElementById('monitorInfo');
         
-        if (!gameActive || gameFinished) {
-            quizArea.classList.remove('fade-out');
-            waitingForTransition = false;
+        yesBtn.onclick = () => {
+            if (!question1Active) return;
+            question1Active = false;
+            showQuestion2OnMonitor();
+        };
+        
+        noBtn.onclick = () => {
+            if (!question1Active) return;
+            question1Active = false;
+            infoDiv.innerHTML = "⏳ иди спиши время, возвращайся как сделаешь ⏳<br><button id='restartFromMonitor' style='margin-top:8px; background:#ffa559; border:none; border-radius:30px; padding:6px 15px; font-weight:bold; cursor:pointer;'>↺ Начать сначала</button>";
+            const restartBtn = document.getElementById('restartFromMonitor');
+            if (restartBtn) restartBtn.onclick = () => fullRestart();
+            currentStep = 'infoOnly';
+        };
+    }
+
+    // Второй вопрос с багом
+    function showQuestion2OnMonitor() {
+        currentStep = 'question2';
+        question2Active = true;
+        isSecondYesBroken = false;
+        screenArea.innerHTML = `
+            <div class="quiz-on-screen">
+                <div class="question-monitor">🤔 точно списала? 🤔</div>
+                <div class="options-monitor">
+                    <button class="opt-btn-monitor" id="q2Yes">Да</button>
+                    <button class="opt-btn-monitor" id="q2No">Нет</button>
+                </div>
+                <div id="monitorInfo2" class="info-monitor"></div>
+            </div>
+        `;
+        const yesBtn = document.getElementById('q2Yes');
+        const noBtn = document.getElementById('q2No');
+        const infoDiv = document.getElementById('monitorInfo2');
+        
+        secondYesButtonElement = yesBtn;
+        
+        const brokenHandler = () => {
+            if (!question2Active) return;
+            if (isSecondYesBroken) return;
+            yesBtn.innerText = "#ERROR";
+            console.log("А что ты тут делаешь, баг чтоле какой-то нашла? непорядок конечно, не приятно, надо наверное как-то исправить, может попробуешь кликнуть в левый нижний угол?");
+            isSecondYesBroken = true;
+            yesBtn.onclick = () => {
+                if (!question2Active) return;
+                console.log("Кнопка сломана, нажми в левый нижний угол для исправления");
+            };
+        };
+        
+        yesBtn.onclick = brokenHandler;
+        
+        noBtn.onclick = () => {
+            if (!question2Active) return;
+            infoDiv.innerHTML = "✏️ иди спиши время, возвращайся как сделаешь ✏️<br><button id='restartFromMonitor2' style='margin-top:8px; background:#ffa559; border:none; border-radius:30px; padding:6px 15px; font-weight:bold; cursor:pointer;'>↺ Начать сначала</button>";
+            const restartBtn = document.getElementById('restartFromMonitor2');
+            if (restartBtn) restartBtn.onclick = () => fullRestart();
+            question2Active = false;
+            currentStep = 'infoOnly2';
+        };
+    }
+    
+    // Починка кнопки
+    function fixYesButton() {
+        if (currentStep !== 'question2') {
+            console.log("Сейчас не на втором вопросе");
             return;
         }
-        
-        currentQuestionIndex = nextQuestionIndex;
-        
-        if (currentQuestionIndex < QUESTIONS.length) {
-            renderCurrentQuestion();
-            quizArea.classList.remove('fade-out');
-            quizArea.classList.add('fade-in');
-            await new Promise(resolve => setTimeout(resolve, 100));
-            quizArea.classList.remove('fade-in');
-        } else {
-            quizArea.classList.remove('fade-out');
+        if (!secondYesButtonElement) return;
+        if (!question2Active) return;
+        if (!isSecondYesBroken && secondYesButtonElement.innerText === "Да") {
+            console.log("Уже исправлена");
+            return;
         }
-        waitingForTransition = false;
-    }
-
-    // Отрисовка текущего вопроса
-    function renderCurrentQuestion() {
-        if (!gameActive || gameFinished) return;
-        const q = QUESTIONS[currentQuestionIndex];
-        questionTextEl.textContent = q.text;
-        optionsContainer.innerHTML = '';
-        q.options.forEach((opt, idx) => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.textContent = opt;
-            btn.dataset.optIndex = idx;
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (!gameActive || waitingForTransition || gameFinished) return;
-                handleAnswer(idx);
-            });
-            optionsContainer.appendChild(btn);
-        });
-        messageArea.innerHTML = '';
-    }
-
-    // Обработка ответа (с разным весом для последнего вопроса)
-    function handleAnswer(selectedIdx) {
-        if (!gameActive || waitingForTransition || gameFinished) return;
-        
-        const currentQ = QUESTIONS[currentQuestionIndex];
-        const isCorrect = (selectedIdx === currentQ.correctIndex);
-        const isLast = (currentQuestionIndex === QUESTIONS.length - 1);
-        
-        // Определяем изменение счёта: для последнего вопроса ±1000, для остальных ±1
-        let delta;
-        if (isLast) {
-            delta = isCorrect ? 1000 : -1000;
-        } else {
-            delta = isCorrect ? 1 : -1;
-        }
-        
-        candyCount += delta;
-        updateScoreUI();
-        
-        // Уведомление
-        if (isCorrect) {
-            if (isLast) {
-                showMessage(`✅ ПРАВИЛЬНО! +1000 КОНФЕТ 🍬🍬🍬`, false);
-            } else {
-                showMessage("✅ ПРАВИЛЬНЫЙ ОТВЕТ! +1 конфета 🍬", false);
-            }
-        } else {
-            if (isLast) {
-                showMessage(`❌ НЕВЕРНО! -1000 КОНФЕТ 😭`, true);
-            } else {
-                showMessage("❌ НЕПРАВИЛЬНО! -1 конфета 😢", true);
-            }
-        }
-        
-        waitingForTransition = true;
-        
-        if (isLast) {
-            // Третий вопрос — завершаем игру после небольшой паузы
+        secondYesButtonElement.innerText = "Да";
+        isSecondYesBroken = false;
+        const correctHandler = () => {
+            if (!question2Active) return;
+            question2Active = false;
+            beachSceneDiv.classList.add('active');
+            currentStep = 'beach';
+            scene.style.opacity = '0';
+            roomDiv.style.opacity = '0';
+        };
+        secondYesButtonElement.onclick = correctHandler;
+        const infoDiv = document.getElementById('monitorInfo2');
+        if (infoDiv) {
+            infoDiv.innerHTML = "🔧 Ошибка исправлена! Теперь нажми 'Да' для отпуска! 🌴";
             setTimeout(() => {
-                if (gameActive && !gameFinished) {
-                    endGameAfterLastAnswer(isCorrect);
-                }
-                waitingForTransition = false;
-            }, 1000);
-        } else {
-            // Не последний вопрос — переход к следующему
-            setTimeout(async () => {
-                if (!gameActive || gameFinished) {
-                    waitingForTransition = false;
-                    return;
-                }
-                const nextIndex = currentQuestionIndex + 1;
-                await transitionToNextQuestion(nextIndex);
-                waitingForTransition = false;
-            }, 1200);
+                if (infoDiv.innerHTML.includes("исправлена")) infoDiv.innerHTML = "";
+            }, 2500);
         }
+        console.log("✅ Кнопка 'Да' исправлена!");
     }
     
-    // Финал игры после ответа на последний вопрос
-    async function endGameAfterLastAnswer(isLastAnswerCorrect) {
-        if (gameFinished) return;
-        gameActive = false;
-        gameFinished = true;
-        
-        // Плавно скрываем викторину
-        quizArea.classList.add('fade-out');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        quizScreenDiv.classList.add('hide');
-        
-        // Определяем финальное отображение
-        if (isLastAnswerCorrect) {
-            // ПОБЕДА! Запускаем мощный взрыв (конфетти)
-            if (typeof confetti === 'function') {
-                confetti({ particleCount: 300, spread: 120, origin: { y: 0.6 }, startVelocity: 30, colors: ['#ffcc33', '#ff9933', '#ff66cc', '#aaffdd'] });
-                confetti({ particleCount: 100, spread: 80, origin: { y: 0.7, x: 0.2 }, decay: 0.9 });
-                confetti({ particleCount: 100, spread: 80, origin: { y: 0.7, x: 0.8 }, decay: 0.9 });
-                setTimeout(() => {
-                    confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, startVelocity: 20 });
-                }, 150);
-            } else {
-                console.warn("confetti library not loaded");
-            }
-            
-            const winCandies = candyCount;
-            finalScreenDiv.innerHTML = `
-                <div class="final-area">
-                    <div class="win-title">🎉 ПОБЕДА! 🎉</div>
-                    <div style="font-size:2rem; margin-top:10px;">🍬 Выиграно конфет:</div>
-                    <div class="candy-final-count">${winCandies} 🍬</div>
-                    <button class="restart-btn" id="restartFinalBtn">🍭 Сыграть снова 🍭</button>
-                </div>
-            `;
-        } else {
-            // Последний ответ неверный: проверяем итоговый баланс
-            if (candyCount < 0) {
-                finalScreenDiv.innerHTML = `
-                    <div class="final-area">
-                        <div class="sad-face">😢😟😭</div>
-                        <div style="font-size: 2rem; font-weight: bold; margin: 15px 0; color:#5a2e1a;">НИЧЕГО НЕ ВЫИГРАНО</div>
-                        <div style="font-size:1.6rem;">🍬 Ваш баланс: ${candyCount} конфет</div>
-                        <button class="restart-btn" id="restartFinalBtn">🍬 Попробовать снова 🍬</button>
-                    </div>
-                `;
-            } else {
-                finalScreenDiv.innerHTML = `
-                    <div class="final-area">
-                        <div style="font-size: 2.8rem; font-weight: bold; background: linear-gradient(45deg,#f09819,#ff6a00); background-clip:text; -webkit-background-clip:text; color:transparent;">ИГРА ЗАВЕРШЕНА</div>
-                        <div style="font-size:2rem; margin-top:10px;">🍬 Конфет заработано:</div>
-                        <div class="candy-final-count">${candyCount} 🍬</div>
-                        <button class="restart-btn" id="restartFinalBtn">🎮 Играть заново 🎮</button>
-                    </div>
-                `;
-            }
-        }
-        
-        finalScreenDiv.classList.remove('hide');
-        const restartButton = document.getElementById('restartFinalBtn');
-        if (restartButton) {
-            restartButton.addEventListener('click', () => {
-                fullResetAndRestart();
-            });
-        }
-    }
+    // Слушатель секретной кнопки
+    secretBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fixYesButton();
+    });
     
-    // Полный сброс и рестарт игры
-    function fullResetAndRestart() {
-        currentQuestionIndex = 0;
-        candyCount = 0;
-        gameActive = false;
-        waitingForTransition = false;
-        gameFinished = false;
-        updateScoreUI();
-        
-        finalScreenDiv.classList.add('hide');
-        quizScreenDiv.classList.add('hide');
-        startScreenDiv.classList.remove('hide');
-        
-        if (messageArea) messageArea.innerHTML = '';
-        optionsContainer.innerHTML = '';
-        quizArea.classList.remove('fade-out', 'fade-in');
-    }
+    // Перезапуск с пляжа
+    beachRestart.addEventListener('click', () => {
+        scene.style.opacity = '1';
+        roomDiv.style.opacity = '1';
+        beachSceneDiv.classList.remove('active');
+        fullRestart();
+    });
     
-    // Функция запуска новой игры (по кнопке "Начать игру")
-    function initNewGame() {
-        currentQuestionIndex = 0;
-        candyCount = 0;
-        gameActive = true;
-        waitingForTransition = false;
-        gameFinished = false;
-        updateScoreUI();
-        
-        startScreenDiv.classList.add('hide');
-        finalScreenDiv.classList.add('hide');
-        quizScreenDiv.classList.remove('hide');
-        
-        messageArea.innerHTML = '';
-        quizArea.classList.remove('fade-out', 'fade-in');
-        
-        renderCurrentQuestion();
-        quizArea.classList.add('fade-in');
-        setTimeout(() => {
-            if (quizArea) quizArea.classList.remove('fade-in');
-        }, 300);
-    }
-    
-    // обработчик кнопки старта
-    startBtn.addEventListener('click', () => {
-        if (!gameFinished && !gameActive) {
-            initNewGame();
-        } else {
-            fullResetAndRestart();
-            initNewGame();
+    // Клик по монитору
+    monitorElem.addEventListener('click', (e) => {
+        if (currentStep === 'room') {
+            if (zoomTimeout) clearTimeout(zoomTimeout);
+            performZoomToMonitor();
         }
     });
     
-    // Дополнительная страховка: если библиотека конфетти не загрузилась, чтобы не было ошибок
-    if (typeof confetti !== 'function') {
-        window.confetti = function() { console.log("confetti fallback"); };
-    }
+    // Запуск
+    startZoomSequence();
     
-    console.log("Candy quiz ready — последний вопрос ±1000, взрыв работает!");
+    // Переопределяем функцию для рестарта с дождём
+    window.fullRestart = fullRestart;
+    console.log("✅ Точное приближение к монитору — теперь монитор занимает ~80% экрана и центрируется");
 </script>
 </body>
 </html>
